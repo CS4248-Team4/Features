@@ -91,10 +91,12 @@ def main():
     # word2vec_model.save('word2vec_model.bin')
     # word2vec_model = Word2Vec.load('word2vec_model.bin')
 
-    tagged_strings = [TaggedDocument(words=strings[i], tags=str(y_train[i])) for i in range(len(y_train))]
-    doc2vec_model = Doc2Vec(vector_size=100, window=5, min_count=1, epochs=20)
-    doc2vec_model.build_vocab(tagged_strings)
-    doc2vec_model.train(tagged_strings, total_examples=doc2vec_model.corpus_count, epochs=doc2vec_model.epochs)
+    # tagged_strings = [TaggedDocument(words=strings[i], tags=str(y_train[i])) for i in range(len(y_train))]
+    # doc2vec_model = Doc2Vec(vector_size=100, window=5, min_count=1, epochs=20)
+    # doc2vec_model.build_vocab(tagged_strings)
+    # doc2vec_model.train(tagged_strings, total_examples=doc2vec_model.corpus_count, epochs=doc2vec_model.epochs)
+    # doc2vec_model.save('doc2vec_model.bin')
+    doc2vec_model = Doc2Vec.load('doc2vec_model.bin')
 
     x_train = [doc2vec_model.infer_vector(i) for i in strings]
     # x_train = vectorise(strings, word2vec_model)
