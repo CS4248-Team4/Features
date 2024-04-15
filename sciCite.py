@@ -1,4 +1,4 @@
-# import numpy as np
+import numpy as np
 # import pandas as pd
 import re
 import jsonlines
@@ -23,6 +23,17 @@ import matplotlib.pyplot as plt
 #         else:
 #             x_vec.append(np.mean(s_vec, axis=0))
 #     return np.array(x_vec)
+
+# def train(model, x_train, y_train):
+#     model = model.fit(x_train, y_train)
+
+# def predict(model, x_test):
+#     return model.predict(x_test)
+
+# def evaluate(y_test, y_pred):
+#     score = f1_score(y_test, y_pred, average='macro')
+#     print('f1 score = {}'.format(score))
+#     print('accuracy = %s' % accuracy_score(y_test, y_pred))
 
 def process_strings(strings):
     strings_clean, num_citations, length = [], [], []
@@ -87,20 +98,9 @@ def process_sectionNames(sectionNames):
                 newSectionName = "analysis"
             else:
                 newSectionName = "unspecified"
-        # returned.append(sec_name_mapping[newSectionName])
-        returned.append(newSectionName)
+        returned.append(sec_name_mapping[newSectionName])
+        # returned.append(newSectionName)
     return returned
-
-# def train(model, x_train, y_train):
-#     model = model.fit(x_train, y_train)
-
-# def predict(model, x_test):
-#     return model.predict(x_test)
-
-# def evaluate(y_test, y_pred):
-#     score = f1_score(y_test, y_pred, average='macro')
-#     print('f1 score = {}'.format(score))
-#     print('accuracy = %s' % accuracy_score(y_test, y_pred))
 
 def parse_label2index(label):
     index = []
@@ -132,30 +132,150 @@ def relationship_mapping(y, feature, name):
     for i in range(len(y)):
         if y[i] == 0:
             map_0[feature[i]] += 1
+            total[0] += 1
         elif y[i] == 1:
             map_1[feature[i]] += 1
+            total[1] += 1
         else:
             map_2[feature[i]] += 1
-        total[feature[i]] += 1
+            total[2] += 1
+        # total[feature[i]] += 1
     if name == "section name" or name == "key citation":
-        print(name, "distribution over labels:")
+        print(name, "distribution over labels:", end=" ")
         for key, value in total.items():
-            print(key, "-- 0:", round(map_0[key]/value, 2), "1:", round(map_1[key]/value, 2), "2:", round(map_2[key]/value, 2))
+            print("\n", key, "---")
+            for k, v in map_0.items():
+                if key == 0:
+                    print(k, round(map_0[k]/value, 2), end=" ")
+                elif key == 1:
+                    print(k, round(map_1[k]/value, 2), end=" ")
+                else:
+                    print(k, round(map_2[k]/value, 2), end=" ")
+        # for key, value in total.items():
+        #     print(key, "-- 0:", round(map_0[key]/value, 2), "1:", round(map_1[key]/value, 2), "2:", round(map_2[key]/value, 2))
+        if name == "section name":
+            secName_relationship_bar_plotting(total, map_0, map_1, map_2)
+        else:
+            keyCite_relationship_bar_plotting(total, map_0, map_1, map_2)
     else:
         relationship_plotting(total, map_0, map_1, map_2, name)
 
+def keyCite_relationship_bar_plotting(total, map_0, map_1, map_2):
+    keys = [0, 1, 2]
+    values0 = [map_0[True]/total[0],map_1[True]/total[1], map_2[True]/total[2]]
+    values1 = [map_0[False]/total[0], map_1[False]/total[1], map_2[False]/total[2]]
+    bar_width = 0.2
+    r1 = np.arange(len(keys))
+    r2 = [x + bar_width for x in r1]
+    plt.bar(r1, values0, width=bar_width, edgecolor='grey', label='true')
+    plt.bar(r2, values1, width=bar_width, edgecolor='grey', label='false')
+    plt.xlabel('label')
+    plt.xticks([r + bar_width for r in range(len(keys))], keys)
+    plt.ylabel('percentage')
+    plt.title('P(isKeyCite|label)')
+    plt.legend()
+    plt.show()
+
+def secName_relationship_bar_plotting(total, map_0, map_1, map_2):
+    # keys = sorted(total.keys())
+    # values0 = [map_0[key]/total[key] for key in keys]
+    # values1 = [map_1[key]/total[key] for key in keys]
+    # values2 = [map_2[key]/total[key] for key in keys]
+    # bar_width = 0.2
+    # r1 = np.arange(len(keys))
+    # r2 = [x + bar_width for x in r1]
+    # r3 = [x + bar_width for x in r2]
+    # plt.bar(r1, values0, width=bar_width, edgecolor='grey', label='label 0')
+    # plt.bar(r2, values1, width=bar_width, edgecolor='grey', label='label 1')
+    # plt.bar(r3, values2, width=bar_width, edgecolor='grey', label='label 2')
+    # plt.xlabel(name)
+    # plt.xticks([r + bar_width for r in range(len(keys))], keys)
+    # plt.ylabel('percentage')
+    # plt.title('P(label|sectionName)')
+    # plt.legend()
+    # plt.show()
+
+    keys = [0, 1, 2]
+    values = [[map_0[i]/total[0], map_1[i]/total[1], map_2[i]/total[2]] for i in range(14)]
+    bar_width = 0.05
+    rx = []
+    for i in range(14):
+        if i == 0:
+            rx.append(np.arange(len(keys)))
+        else:
+            rx.append([x + bar_width for x in rx[i-1]])
+        for k, v in sec_name_mapping.items():
+            if v == i:
+                name = k
+        plt.bar(rx[i], values[i], width=bar_width, edgecolor='grey', label=name)
+    plt.xlabel('label')
+    plt.xticks([r + bar_width for r in range(len(keys))], keys)
+    plt.ylabel('percentage')
+    plt.title('P(sectionName|label)')
+    plt.legend()
+    plt.show()
+
+    # sorted_items = sorted(map_0.items())
+    # keys = [item[0] for item in sorted_items]
+    # values = [item[1]/total[0] for item in sorted_items]
+    # bar_width = 0.4
+    # indices = np.arange(len(keys))
+    # for i, (category, value) in enumerate(zip(keys, values)):
+    #     plt.bar(indices[i], value, width=bar_width, label=category)
+    #     plt.axvline(x=indices[i] + bar_width / 2, color='black', linewidth=0.5)
+    # plt.xticks(indices + bar_width / 2, keys)
+    # plt.xlabel(name)
+    # plt.ylabel('percentage')
+    # plt.title('P(sectionName|label_0)')
+    # plt.legend()
+    # plt.show()
+
+    # sorted_items = sorted(map_1.items())
+    # keys = [item[0] for item in sorted_items]
+    # values = [item[1]/total[1] for item in sorted_items]
+    # bar_width = 0.4
+    # indices = np.arange(len(keys))
+    # for i, (category, value) in enumerate(zip(keys, values)):
+    #     plt.bar(indices[i], value, width=bar_width, label=category)
+    #     plt.axvline(x=indices[i] + bar_width / 2, color='black', linewidth=0.5)
+    # plt.xticks(indices + bar_width / 2, keys)
+    # plt.xlabel(name)
+    # plt.ylabel('percentage')
+    # plt.title('P(sectionName|label_1)')
+    # plt.legend()
+    # plt.show()
+
+    # sorted_items = sorted(map_2.items())
+    # keys = [item[0] for item in sorted_items]
+    # values = [item[1]/total[2] for item in sorted_items]
+    # bar_width = 0.4
+    # indices = np.arange(len(keys))
+    # for i, (category, value) in enumerate(zip(keys, values)):
+    #     plt.bar(indices[i], value, width=bar_width, label=category)
+    #     plt.axvline(x=indices[i] + bar_width / 2, color='black', linewidth=0.5)
+    # plt.xticks(indices + bar_width / 2, keys)
+    # plt.xlabel(name)
+    # plt.ylabel('percentage')
+    # plt.title('P(sectionName|label_2)')
+    # plt.legend()
+    # plt.show()
+
 def relationship_plotting(total, map_0, map_1, map_2, name):
-    keys = sorted(total.keys())
-    values1, values2, values3 = [], [], []
-    for k in keys:
-        values1.append(map_0[k])
-        values2.append(map_1[k])
-        values3.append(map_2[k])
-    plt.plot(keys, values1, marker='None', linestyle='solid', label='label 0')
-    plt.plot(keys, values2, marker='None', linestyle='dashed', label='label 1')
-    plt.plot(keys, values3, marker='None', linestyle='dotted', label='label 2')
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
+    sorted_items0 = sorted(map_0.items())
+    sorted_items1 = sorted(map_1.items())
+    sorted_items2 = sorted(map_2.items())
+    keys0 = [item[0] for item in sorted_items0]
+    values0 = [item[1]/total[0] for item in sorted_items0]
+    keys1 = [item[0] for item in sorted_items1]
+    values1 = [item[1]/total[1] for item in sorted_items1]
+    keys2 = [item[0] for item in sorted_items2]
+    values2 = [item[1]/total[2] for item in sorted_items2]
+
+    plt.plot(keys0, values0, marker='None', linestyle='solid', label='label 0')
+    plt.plot(keys1, values1, marker='None', linestyle='dashed', label='label 1')
+    plt.plot(keys2, values2, marker='None', linestyle='dotted', label='label 2')
+    plt.xlabel('value')
+    plt.ylabel('percentage')
     plt.title(name + ' relationship')
     plt.legend()
     plt.show()
@@ -179,10 +299,10 @@ def main():
     y_train = parse_label2index(labels)
 
     relationship_mapping(y_train, sectionNames, "section name")
+    relationship_mapping(y_train, isKeyCite, "key citation")
     relationship_mapping(y_train, num_citations, "number of citations")
     relationship_mapping(y_train, str_length, "string length")
     relationship_mapping(y_train, labels_confidence, "label confidence")
-    relationship_mapping(y_train, isKeyCite, "key citation")
     relationship_mapping(y_train, cite_len, "cite length")
     relationship_mapping(y_train, cite_start, "cite start position")
 
